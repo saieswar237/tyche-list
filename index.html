@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TYCHE List — IPO Capital & Allotment Tracker</title>
+  <style>
+    :root {
+      --bg: #f4f6f8;
+      --card-bg: #ffffff;
+      --text: #1e293b;
+      --text-muted: #64748b;
+      --border: #e2e8f0;
+      --primary: #2563eb;
+      --primary-hover: #1d4ed8;
+      --success: #16a34a;
+      --success-light: #dcfce7;
+      --danger: #dc2626;
+      --danger-light: #fee2e2;
+      --warning: #d97706;
+      --warning-light: #fef3c7;
+      --info: #0284c7;
+      --header-bg: #ffffff;
+    }
+    [data-theme="dark"] {
+      --bg: #0f172a;
+      --card-bg: #1e293b;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --border: #334155;
+      --header-bg: #1e293b;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background-color: var(--bg); color: var(--text); transition: background-color 0.2s, color 0.2s; line-height: 1.5; padding-bottom: 40px; }
+
+    .lock-screen { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(15, 23, 42, 0.95); z-index: 9999; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(5px); }
+    .lock-box { background: var(--card-bg); padding: 32px; border-radius: 12px; border: 1px solid var(--border); width: 90%; max-width: 380px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.3); }
+
+    .container { max-width: 1100px; margin: 0 auto; padding: 0 16px; }
+    header { background: var(--header-bg); border-bottom: 1px solid var(--border); padding: 16px 0; margin-bottom: 24px; }
+    .header-content { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
+    .logo-group { display: flex; align-items: center; gap: 10px; }
+    .logo-title { font-size: 1.4rem; font-weight: 700; color: var(--primary); }
+    .badge-sub { background: var(--border); color: var(--text-muted); font-size: 0.75rem; padding: 3px 8px; border-radius: 12px; font-weight: 600; }
+
+    .btn { padding: 8px 14px; border-radius: 6px; border: 1px solid transparent; font-weight: 600; font-size: 0.875rem; cursor: pointer; transition: all 0.15s ease-in-out; display: inline-flex; align-items: center; justify-content: center; gap: 6px; text-decoration: none; }
+    .btn-primary { background: var(--primary); color: #fff; }
+    .btn-primary:hover { background: var(--primary-hover); }
+    .btn-outline { background: transparent; border-color: var(--border); color: var(--text); }
+    .btn-outline:hover { background: var(--border); }
+    .btn-warning { background: var(--warning); color: #fff; }
+    .btn-success { background: var(--success); color: #fff; }
+    .btn-danger { background: var(--danger); color: #fff; }
+    .btn-sm { padding: 4px 10px; font-size: 0.8rem; }
+
+    .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 24px; }
+    .kpi-card { background: var(--card-bg); border: 1px solid var(--border); border-left: 5px solid var(--primary); border-radius: 8px; padding: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+    .kpi-card.allocated { border-left-color: var(--success); }
+    .kpi-card.refund { border-left-color: var(--danger); }
+    .kpi-card.people { border-left-color: var(--info); }
+    .kpi-label { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.5px; }
+    .kpi-value { font-size: 1.5rem; font-weight: 800; margin-top: 6px; }
+
+    .toolbar { display: flex; flex-wrap: wrap; gap: 12px; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+    .search-box { flex: 1; min-width: 240px; }
+    .input { width: 100%; padding: 8px 12px; border-radius: 6px; border: 1px solid var(--border); background: var(--card-bg); color: var(--text); font-size: 0.9rem; outline: none; }
+    .input:focus { border-color: var(--primary); }
+    .filter-group { display: flex; gap: 4px; flex-wrap: wrap; }
+    .filter-btn { padding: 6px 12px; border-radius: 6px; border: 1px solid var(--border); background: var(--card-bg); color: var(--text-muted); cursor: pointer; font-size: 0.8rem; font-weight: 600; }
+    .filter-btn.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+
+    .person-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 10px; margin-bottom: 16px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,0.04); }
+    .person-header { padding: 14px 18px; background: rgba(0,0,0,0.02); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
+    .person-info { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .status-toggle-btn { padding: 3px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; cursor: pointer; border: none; }
+    .status-active { background: var(--success-light); color: var(--success); }
+    .status-inactive { background: var(--border); color: var(--text-muted); }
+    .pan-badge { background: var(--bg); border: 1px solid var(--border); padding: 2px 8px; border-radius: 4px; font-family: monospace; font-size: 0.85rem; font-weight: 700; }
+
+    .person-totals { display: flex; gap: 16px; font-size: 0.85rem; }
+    .person-body { padding: 16px; }
+
+    .inline-form { display: grid; grid-template-columns: 2fr 1fr 1fr auto; gap: 8px; margin-bottom: 16px; background: var(--bg); padding: 10px; border-radius: 8px; border: 1px solid var(--border); }
+    @media(max-width: 600px) { .inline-form { grid-template-columns: 1fr; } }
+
+    .table-container { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.875rem; text-align: left; }
+    th { background: var(--bg); padding: 10px; border-bottom: 1px solid var(--border); color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase; }
+    td { padding: 10px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+
+    .badge-status { padding: 4px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 700; display: inline-block; }
+    .badge-allocated { background: var(--success-light); color: var(--success); }
+    .badge-not-allocated { background: var(--danger-light); color: var(--danger); }
+    .badge-pending { background: var(--warning-light); color: var(--warning); }
+
+    .modal-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+    .modal-box { background: var(--card-bg); border-radius: 10px; border: 1px solid var(--border); width: 90%; max-width: 440px; padding: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+    .form-group { margin-bottom: 14px; }
+    .form-group label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 4px; }
+
+    .d-none { display: none !important; }
+  </style>
+</head>
+<body>
+
+  <div id="lockScreen" class="lock-screen">
+    <div class="lock-box">
+      <h2 style="color:var(--primary); margin-bottom: 6px;">🔐 TYCHE List</h2>
+      <p style="color:var(--text-muted); font-size: 0.85rem; margin-bottom: 20px;">IPO Capital & Allotment Tracker</p>
+      <input type="password" id="passInput" class="input" placeholder="Enter Master Password" style="text-align: center; margin-bottom: 12px; font-size: 1.1rem;" onkeyup="if(event.key==='Enter') unlockApp()">
+      <div id="passErr" style="color: var(--danger); font-size: 0.8rem; margin-bottom: 12px;" class="d-none">Incorrect password. Try again.</div>
+      <button class="btn btn-primary" style="width: 100%; font-size: 1rem;" onclick="unlockApp()">Unlock Dashboard</button>
+    </div>
+  </div>
+
+  <header>
+    <div class="container header-content">
+      <div class="logo-group">
+        <div class="logo-title">📈 TYCHE List</div>
+        <div class="badge-sub">IPO Capital & Allotment Tracker</div>
+      </div>
+      <div style="display: flex; gap: 8px;">
+        <button class="btn btn-outline" onclick="toggleTheme()" id="themeBtn">🌙 Dark Mode</button>
+        <button class="btn btn-outline" style="color: var(--warning); border-color: var(--warning);" onclick="lockApp()">🔒 Lock</button>
+        <button class="btn btn-primary" onclick="openPersonModal()">+ Add Person Profile</button>
+      </div>
+    </div>
+  </header>
+
+  <div id="app" class="container d-none">
+
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-label">Total Money Applied</div>
+        <div class="kpi-value" style="color:var(--primary);" id="kpiTotal">₹0</div>
+      </div>
+      <div class="kpi-card allocated">
+        <div class="kpi-label">Allocated Value</div>
+        <div class="kpi-value" style="color:var(--success);" id="kpiAllocated">₹0</div>
+      </div>
+      <div class="kpi-card refund">
+        <div class="kpi-label">Not Allocated / Refundable</div>
+        <div class="kpi-value" style="color:var(--danger);" id="kpiRefund">₹0</div>
+      </div>
+      <div class="kpi-card people">
+        <div class="kpi-label">People Profiles Count</div>
+        <div class="kpi-value" style="color:var(--info); font-size: 1.2rem; margin-top: 10px;" id="kpiPeople">Active: 0 | Inactive: 0</div>
+      </div>
+    </div>
+
+    <div class="toolbar">
+      <div class="search-box">
+        <input type="text" id="searchInput" class="input" placeholder="🔍 Search person, PAN, or company..." oninput="render()">
+      </div>
+      <div class="filter-group">
+        <button class="filter-btn active" onclick="setFilter('all', this)">All</button>
+        <button class="filter-btn" onclick="setFilter('active', this)">Active</button>
+        <button class="filter-btn" onclick="setFilter('inactive', this)">Inactive</button>
+        <button class="filter-btn" onclick="setFilter('allocated', this)">Allocated</button>
+        <button class="filter-btn" onclick="setFilter('not_allocated', this)">Not Allocated</button>
+      </div>
+      <div style="display: flex; gap: 6px;">
+        <button class="btn btn-outline btn-sm" onclick="exportJSON()">📥 Export JSON</button>
+        <button class="btn btn-outline btn-sm" onclick="exportCSV()">📊 Export CSV</button>
+      </div>
+    </div>
+
+    <div id="peopleList"></div>
+
+  </div>
+
+  <div id="personModal" class="modal-overlay d-none">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 id="personModalTitle">Add Person Profile</h3>
+        <button class="btn btn-outline btn-sm" onclick="closePersonModal()">✕</button>
+      </div>
+      <form id="personForm" onsubmit="savePersonForm(event)">
+        <input type="hidden" id="personId">
+        <div class="form-group">
+          <label>Full Name</label>
+          <input type="text" id="personName" class="input" placeholder="e.g. Ramesh Kumar" required>
+        </div>
+        <div class="form-group">
+          <label>PAN Card No. (Auto-Uppercase)</label>
+          <input type="text" id="personPan" class="input" placeholder="ABCDE1234F" maxlength="10" oninput="this.value=this.value.toUpperCase()" required>
+        </div>
+        <div class="form-group" style="display: flex; align-items: center; gap: 8px;">
+          <input type="checkbox" id="personActive" checked style="width: 18px; height: 18px;">
+          <label for="personActive" style="margin: 0; cursor: pointer;">Active Profile</label>
+        </div>
+        <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 10px;">Save Profile</button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    const MASTER_PASS = "152025";
+    let people = [];
+    let currentFilter = 'all';
+    let theme = localStorage.getItem('tyche_theme') || 'light';
+
+    document.addEventListener('DOMContentLoaded', () => {
+      document.documentElement.setAttribute('data-theme', theme);
+      updateThemeBtn();
+      loadData();
+      if (sessionStorage.getItem('tyche_unlocked') === 'true') {
+        unlockSuccess();
+      }
+    });
+
+    function loadData() {
+      const stored = localStorage.getItem('tyche_people_data');
+      people = stored ? JSON.parse(stored) : [];
+    }
+
+    function saveData() {
+      localStorage.setItem('tyche_people_data', JSON.stringify(people));
+    }
+
+    function unlockApp() {
+      const val = document.getElementById('passInput').value;
+      if (val === MASTER_PASS) {
+        sessionStorage.setItem('tyche_unlocked', 'true');
+        unlockSuccess();
+      } else {
+        document.getElementById('passErr').classList.remove('d-none');
+      }
+    }
+
+    function unlockSuccess() {
+      document.getElementById('lockScreen').classList.add('d-none');
+      document.getElementById('app').classList.remove('d-none');
+      render();
+    }
+
+    function lockApp() {
+      sessionStorage.removeItem('tyche_unlocked');
+      document.getElementById('passInput').value = '';
+      document.getElementById('passErr').classList.add('d-none');
+      document.getElementById('lockScreen').classList.remove('d-none');
+      document.getElementById('app').classList.add('d-none');
+    }
+
+    function toggleTheme() {
+      theme = theme === 'light' ? 'dark' : 'light';
+      document.documentElement.setAttribute('data-theme', theme);
+      localStorage.setItem('tyche_theme', theme);
+      updateThemeBtn();
+    }
+
+    function updateThemeBtn() {
+      document.getElementById('themeBtn').innerText = theme === 'dark' ? '☀️ Light Mode' : '🌙 Dark Mode';
+    }
+
+    function openPersonModal(id = null) {
+      document.getElementById('personForm').reset();
+      document.getElementById('personId').value = '';
+      if (id) {
+        const p = people.find(x => x.id === id);
+        if (p) {
+          document.getElementById('personModalTitle').innerText = 'Edit Person Profile';
+          document.getElementById('personId').value = p.id;
+          document.getElementById('personName').value = p.name;
+          document.getElementById('personPan').value = p.pan;
+          document.getElementById('personActive').checked = p.active;
+        }
+      } else {
+        document.getElementById('personModalTitle').innerText = 'Add Person Profile';
+        document.getElementById('personActive').checked = true;
+      }
+      document.getElementById('personModal').classList.remove('d-none');
+    }
+
+    function closePersonModal() {
+      document.getElementById('personModal').classList.add('d-none');
+    }
+
+    function savePersonForm(e) {
+      e.preventDefault();
+      const id = document.getElementById('personId').value;
+      const name = document.getElementById('personName').value.trim();
+      const pan = document.getElementById('personPan').value.trim().toUpperCase();
+      const active = document.getElementById('personActive').checked;
+
+      if (id) {
+        const p = people.find(x => x.id === id);
+        if (p) { p.name = name; p.pan = pan; p.active = active; }
+      } else {
+        people.push({ id: 'p_' + Date.now(), name, pan, active, ipos: [] });
+      }
+      saveData();
+      closePersonModal();
+      render();
+    }
+
+    function togglePersonStatus(id) {
+      const p = people.find(x => x.id === id);
+      if (p) { p.active = !p.active; saveData(); render(); }
+    }
+
+    function deletePerson(id) {
+      if (confirm('Delete profile and associated IPO applications?')) {
+        people = people.filter(x => x.id !== id);
+        saveData();
+        render();
+      }
+    }
+
+    function addIpo(personId, e) {
+      e.preventDefault();
+      const form = e.target;
+      const company = form.querySelector('.c-name').value.trim();
+      const lots = parseInt(form.querySelector('.c-lots').value) || 1;
+      const money = parseFloat(form.querySelector('.c-money').value) || 0;
+
+      const p = people.find(x => x.id === personId);
+      if (p) {
+        p.ipos.push({ id: 'i_' + Date.now(), company, lots, money, status: 'Pending' });
+        saveData();
+        render();
+      }
+    }
+
+    function setIpoStatus(personId, ipoId, status) {
+      const p = people.find(x => x.id === personId);
+      if (p) {
+        const ipo = p.ipos.find(i => i.id === ipoId);
+        if (ipo) {
+          ipo.status = status;
+          saveData();
+          render();
+        }
+      }
+    }
+
+    function deleteIpo(personId, ipoId) {
+      const p = people.find(x => x.id === personId);
+      if (p) {
+        p.ipos = p.ipos.filter(i => i.id !== ipoId);
+        saveData();
+        render();
+      }
+    }
+
+    function setFilter(f, btn) {
+      currentFilter = f;
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      render();
+    }
+
+    function fmt(val) { return '₹' + Number(val).toLocaleString('en-IN'); }
+
+    function render() {
+      const search = document.getElementById('searchInput').value.toLowerCase().trim();
+      const container = document.getElementById('peopleList');
+      container.innerHTML = '';
+
+      let totMoney = 0, totAlloc = 0, totRefund = 0, actCount = 0, inactCount = 0;
+
+      people.forEach(p => {
+        if (p.active) actCount++; else inactCount++;
+        p.ipos.forEach(i => {
+          totMoney += i.money;
+          if (i.status === 'Allocated') totAlloc += i.money;
+          if (i.status === 'Not Allocated') totRefund += i.money;
+        });
+      });
+
+      document.getElementById('kpiTotal').innerText = fmt(totMoney);
+      document.getElementById('kpiAllocated').innerText = fmt(totAlloc);
+      document.getElementById('kpiRefund').innerText = fmt(totRefund);
+      document.getElementById('kpiPeople').innerText = `Active: ${actCount} | Inactive: ${inactCount}`;
+
+      const filtered = people.filter(p => {
+        if (currentFilter === 'active' && !p.active) return false;
+        if (currentFilter === 'inactive' && p.active) return false;
+        if (currentFilter === 'allocated' && !p.ipos.some(i => i.status === 'Allocated')) return false;
+        if (currentFilter === 'not_allocated' && !p.ipos.some(i => i.status === 'Not Allocated')) return false;
+
+        if (search) {
+          const mName = p.name.toLowerCase().includes(search);
+          const mPan = p.pan.toLowerCase().includes(search);
+          const mComp = p.ipos.some(i => i.company.toLowerCase().includes(search));
+          return mName || mPan || mComp;
+        }
+        return true;
+      });
+
+      if (filtered.length === 0) {
+        container.innerHTML = `
+          <div style="text-align:center; padding: 40px; background: var(--card-bg); border-radius: 8px; border: 1px solid var(--border); color: var(--text-muted);">
+            <div style="font-size: 2rem; margin-bottom: 8px;">📋</div>
+            <h4 style="color:var(--text); margin-bottom:4px;">No Person Profiles Found</h4>
+            <p style="font-size: 0.85rem;">Click "+ Add Person Profile" to start tracking IPO applications.</p>
+          </div>
+        `;
+        return;
+      }
+
+      filtered.forEach(p => {
+        let pTot = 0, pAlloc = 0, pRef = 0;
+        p.ipos.forEach(i => {
+          pTot += i.money;
+          if (i.status === 'Allocated') pAlloc += i.money;
+          if (i.status === 'Not Allocated') pRef += i.money;
+        });
+
+        const card = document.createElement('div');
+        card.className = 'person-card';
+        card.innerHTML = `
+          <div class="person-header">
+            <div class="person-info">
+              <button class="status-toggle-btn ${p.active ? 'status-active' : 'status-inactive'}" onclick="togglePersonStatus('${p.id}')">
+                ${p.active ? '● Active' : '○ Inactive'}
+              </button>
+              <h3 style="font-size: 1.1rem; font-weight: 700;">${p.name}</h3>
+              <span class="pan-badge">${p.pan}</span>
+            </div>
+            <div style="display:flex; align-items:center; gap: 16px;">
+              <div class="person-totals">
+                <div>Total: <strong style="color:var(--primary);">${fmt(pTot)}</strong></div>
+                <div>Allocated: <strong style="color:var(--success);">${fmt(pAlloc)}</strong></div>
+                <div>Refund: <strong style="color:var(--danger);">${fmt(pRef)}</strong></div>
+              </div>
+              <div style="display:flex; gap: 4px;">
+                <button class="btn btn-outline btn-sm" onclick="openPersonModal('${p.id}')">✏️ Edit</button>
+                <button class="btn btn-outline btn-sm" style="color:var(--danger);" onclick="deletePerson('${p.id}')">🗑️ Delete</button>
+              </div>
+            </div>
+          </div>
+          <div class="person-body">
+            <form onsubmit="addIpo('${p.id}', event)" class="inline-form">
+              <input type="text" class="input c-name" placeholder="Company Applied (e.g. Tata Tech)" required>
+              <input type="number" class="input c-lots" placeholder="Lots" min="1" value="1" required>
+              <input type="number" class="input c-money" placeholder="Money Applied (₹)" min="0" required>
+              <button type="submit" class="btn btn-success btn-sm">+ Add IPO</button>
+            </form>
+
+            ${p.ipos.length === 0 ? `
+              <div style="text-align:center; padding: 12px; color:var(--text-muted); font-size:0.85rem;">No IPO applications added under ${p.name} yet.</div>
+            ` : `
+              <div class="table-container">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Company Applied</th>
+                      <th>Lots</th>
+                      <th>Money Applied (₹)</th>
+                      <th>Status</th>
+                      <th style="text-align:center;">One-Click Allocation Actions</th>
+                      <th style="text-align:right;">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${p.ipos.map(i => `
+                      <tr>
+                        <td style="font-weight:700;">${i.company}</td>
+                        <td>${i.lots}</td>
+                        <td style="font-weight:700;">${fmt(i.money)}</td>
+                        <td>
+                          <span class="badge-status ${i.status === 'Allocated' ? 'badge-allocated' : (i.status === 'Not Allocated' ? 'badge-not-allocated' : 'badge-pending')}">
+                            ${i.status}
+                          </span>
+                        </td>
+                        <td style="text-align:center;">
+                          <div style="display:inline-flex; gap: 6px;">
+                            <button class="btn btn-sm ${i.status === 'Allocated' ? 'btn-success' : 'btn-outline'}" style="border-color:var(--success); color:${i.status==='Allocated'?'#fff':'var(--success)'};" onclick="setIpoStatus('${p.id}', '${i.id}', 'Allocated')">
+                              ✓ Allocated
+                            </button>
+                            <button class="btn btn-sm ${i.status === 'Not Allocated' ? 'btn-danger' : 'btn-outline'}" style="border-color:var(--danger); color:${i.status==='Not Allocated'?'#fff':'var(--danger)'};" onclick="setIpoStatus('${p.id}', '${i.id}', 'Not Allocated')">
+                              ✕ Not Allocated
+                            </button>
+                          </div>
+                        </td>
+                        <td style="text-align:right;">
+                          <button class="btn btn-outline btn-sm" style="color:var(--danger); padding:2px 6px;" onclick="deleteIpo('${p.id}', '${i.id}')">✕</button>
+                        </td>
+                      </tr>
+                    `).join('')}
+                  </tbody>
+                </table>
+              </div>
+            `}
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function exportJSON() {
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(people, null, 2));
+      const a = document.createElement('a');
+      a.href = dataStr;
+      a.download = "tyche_ipo_tracker.json";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    }
+
+    function exportCSV() {
+      let csv = "Person Name,PAN Card No,Active Status,Company Applied,Lots,Money Applied (INR),Allotment Status\n";
+      people.forEach(p => {
+        if (p.ipos.length === 0) {
+          csv += `"${p.name}","${p.pan}","${p.active ? 'Active' : 'Inactive'}","N/A",0,0,"N/A"\n`;
+        } else {
+          p.ipos.forEach(i => {
+            csv += `"${p.name}","${p.pan}","${p.active ? 'Active' : 'Inactive'}","${i.company}",${i.lots},${i.money},"${i.status}"\n`;
+          });
+        }
+      });
+      const dataStr = "data:text/csv;charset=utf-8," + encodeURIComponent(csv);
+      const a = document.createElement('a');
+      a.href = dataStr;
+      a.download = "tyche_ipo_tracker.csv";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    }
+  </script>
+</body>
+</html>
